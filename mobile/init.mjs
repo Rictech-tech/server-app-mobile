@@ -10,7 +10,10 @@ let advisors = [
         username: 'admin',
         name: 'Daniel Eduardo Eguia Yupanqui',
         position: 'ANALISTA DE CREDITOS III',
-        agency: 'Huancayo',
+        agency: {
+            code: "03",
+            name: "Huancayo"
+        },
         password: '123'
     },
     {
@@ -18,7 +21,10 @@ let advisors = [
         username: 'pepito',
         name: 'Pepito Nunez',
         position: 'ANALISTA DE CREDITOS III',
-        agency: 'Huancayo',
+        agency: {
+            code: "03",
+            name: "Huancayo"
+        },
         password: '1'
     },
     {
@@ -26,28 +32,46 @@ let advisors = [
         username: 'a',
         name: 'Joh Doe',
         position: 'ANALISTA DE CREDITOS III',
-        agency: 'Huancayo',
+        agency: {
+            code: "03",
+            name: "Huancayo"
+        },
         password: '1'
     }
 ]
 router.post("/login", async (req, res) => {
-    console.log("Login");
-    const { username, password } = req.body;
-    const user = advisors.find(el => el.username === username)
-    if (user && user.password === password) {
-        const data = {
+    const { email, password } = req.body;
+    try {
+        console.log({email, password })
+        const response = await fetch(`${END_POINT_SUPABASE}/auth/v1/token?grant_type=password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: `${SUPABASE_API_KEY}`,
+                Authorization: `Bearer ${SUPABASE_API_KEY}`,
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+        const data = await response.json();
+        const data_send = {
             success: true,
-            message: "Login correcto",
-            user: user
+            user: {
+                email: data.user.email,
+                ...data.user.user_metadata
+            }
         }
-        console.log({ data })
-        return res.json(data);
+        console.log(data_send.user)
+        return res.json(data_send);
+    } catch(err) {
+        console.log(err)
+        return res.json({
+            success: false,
+            message: "Login incorrecto",
+        });
     }
-
-    return res.json({
-        success: false,
-        message: "Login incorrecto",
-    });
 });
 
 router.get("/clients", async (req, res) => {
