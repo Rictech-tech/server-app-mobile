@@ -1,6 +1,8 @@
 import express from "express";
 
 const router = express.Router();
+const END_POINT_SUPABASE = "https://srhpcnaonhyzwvirvczi.supabase.co";
+const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaHBjbmFvbmh5end2aXJ2Y3ppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg2Nzc4NSwiZXhwIjoyMDcyNDQzNzg1fQ.qYVh94hfn-eWPrsPlEBFkueJWwVOlzJZDxHnVZSVHNM";
 
 let advisors = [
     {
@@ -85,11 +87,8 @@ let clients = [
 ]
 router.post("/login", async (req, res) => {
     console.log("Login");
-
     const { username, password } = req.body;
-    console.log({ username, password })
     const user = advisors.find(el => el.username === username)
-    console.log({ user })
     if (user && user.password === password) {
         const data = {
             success: true,
@@ -107,10 +106,21 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/clients", async (req, res) => {
-    console.log("CLients")
+    const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/clients?select=*`, {
+        method: "GET",
+        headers: {
+            apikey: SUPABASE_API_KEY,
+            Authorization: `Bearer ${SUPABASE_API_KEY}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+    }
+    const data = await response.json();
     return res.json({
         success: true,
-        data: clients.reduce((acc, cur) => {
+        data: data.reduce((acc, cur) => {
             acc.push(Object.entries(cur).reduce((accc, curr) => {
                 const [k, v] = curr
                 if (k !== "routes") {
@@ -127,28 +137,27 @@ router.post("/routes/add", async (req, res) => {
     console.log("Routes")
     const { coordinates, client_id, signature, notes, photos } = req.body
 
-    console.log({ coordinates, client_id, signature, notes, photos })
-    const client = clients.find(el => el.id == client_id)
-    if (client) {
-        console.log("Has client")
-        clients = clients.reduce((acc, cur) => {
-            const data = cur
-            if (cur.id === client_id) {
-                data['routes'] = [
-                    ...data['routes'],
-                    {
-                        date: new Date(),
-                        coordinates,
-                        signature,
-                        notes,
-                        photos
-                    }
-                ]
-            }
-            acc.push(data)
-            return acc
-        }, [])
+    const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_API_KEY,
+            Authorization: `Bearer ${SUPABASE_API_KEY}`,
+        },
+        body: JSON.stringify({
+            coordinates,
+            client_id,
+            signature,
+            notes,
+            photos
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
     }
+
+    console.log({ coordinates, client_id, signature, notes, photos })
     return res.json({
         success: true,
         message: 'Se Agregó correctamente'
