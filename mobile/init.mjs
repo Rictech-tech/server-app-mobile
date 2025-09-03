@@ -40,6 +40,7 @@ let clients = [
         blackberry: 3.5,
         promises_to_pay_today: 5,
         new_disbursements: 120,
+        routes: [],
         visits: []
     },
     {
@@ -52,6 +53,7 @@ let clients = [
         blackberry: 3.5,
         promises_to_pay_today: 5,
         new_disbursements: 22,
+        routes: [],
         visits: []
     },
     {
@@ -64,6 +66,7 @@ let clients = [
         blackberry: 3.5,
         promises_to_pay_today: 5,
         new_disbursements: 33,
+        routes: [],
         visits: []
     },
     {
@@ -76,6 +79,7 @@ let clients = [
         blackberry: 3.5,
         promises_to_pay_today: 5,
         new_disbursements: 44,
+        routes: [],
         visits: []
     },
 ]
@@ -109,7 +113,7 @@ router.get("/clients", async (req, res) => {
         data: clients.reduce((acc, cur) => {
             acc.push(Object.entries(cur).reduce((accc, curr) => {
                 const [k, v] = curr
-                if (k !== "visits") {
+                if (k !== "routes") {
                     accc[k] = v
                 }
                 return accc
@@ -119,10 +123,42 @@ router.get("/clients", async (req, res) => {
     });
 });
 
+router.post("/routes/add", async (req, res) => {
+    console.log("Routes")
+    const { coordinates, client_id, signature, notes, photos } = req.body
+
+    console.log({ coordinates, client_id, signature, notes, photos })
+    const client = clients.find(el => el.id == client_id)
+    if (client) {
+        console.log("Has client")
+        clients = clients.reduce((acc, cur) => {
+            const data = cur
+            if (cur.id === client_id) {
+                data['routes'] = [
+                    ...data['routes'],
+                    {
+                        date: new Date(),
+                        coordinates,
+                        signature,
+                        notes,
+                        photos
+                    }
+                ]
+            }
+            acc.push(data)
+            return acc
+        }, [])
+    }
+    return res.json({
+        success: true,
+        message: 'Se Agregó correctamente'
+    });
+});
+
 router.post("/visits/add", async (req, res) => {
-    const { coordinates, client_id, signature, notes } = req.body
-    // console.log(req.body)
-    console.log(notes)
+    const { client_id, signature, notes, photos } = req.body
+    console.log("Visits")
+    console.log({ client_id, signature, notes, photos })
     const client = clients.find(el => el.id == client_id)
     if (client) {
         console.log("Has client")
@@ -133,18 +169,16 @@ router.post("/visits/add", async (req, res) => {
                     ...data['visits'],
                     {
                         date: new Date(),
-                        coordinates,
                         signature,
-                        notes
+                        notes,
+                        photos
                     }
                 ]
             }
             acc.push(data)
             return acc
         }, [])
-        // console.log(JSON.stringify(clients))
     }
-    console.log("add")
     return res.json({
         success: true,
         message: 'Se Agregó correctamente'

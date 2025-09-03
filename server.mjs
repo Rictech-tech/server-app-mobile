@@ -10,13 +10,14 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/test', async (req, res) => {
+    console.log("aaa")
     return res.send({
         error: false
     });
 });
 app.use("/api/mobile", mobileRoutes);
 
-const PORT = process.env?.PORT || 4002;
+const PORT = process.env?.PORT || 4003;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
