@@ -81,11 +81,10 @@ router.get("/routes", async (req, res) => {
         return false;
     });
 
-    return res.json(uniqueData);
-    // return res.json({
-    //     success: true,
-    //     data: data,
-    // });
+    return res.json({
+        success: true,
+        data: uniqueData,
+    });
 });
 
 router.post("/routes/add", async (req, res) => {
