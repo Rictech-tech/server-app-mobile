@@ -4,41 +4,6 @@ const router = express.Router();
 const END_POINT_SUPABASE = "https://srhpcnaonhyzwvirvczi.supabase.co";
 const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaHBjbmFvbmh5end2aXJ2Y3ppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg2Nzc4NSwiZXhwIjoyMDcyNDQzNzg1fQ.qYVh94hfn-eWPrsPlEBFkueJWwVOlzJZDxHnVZSVHNM";
 
-let advisors = [
-    {
-        id: 4233,
-        username: 'admin',
-        name: 'Daniel Eduardo Eguia Yupanqui',
-        position: 'ANALISTA DE CREDITOS III',
-        agency: {
-            code: "03",
-            name: "Huancayo"
-        },
-        password: '123'
-    },
-    {
-        id: 8833,
-        username: 'pepito',
-        name: 'Pepito Nunez',
-        position: 'ANALISTA DE CREDITOS III',
-        agency: {
-            code: "03",
-            name: "Huancayo"
-        },
-        password: '1'
-    },
-    {
-        id: 878,
-        username: 'a',
-        name: 'Joh Doe',
-        position: 'ANALISTA DE CREDITOS III',
-        agency: {
-            code: "03",
-            name: "Huancayo"
-        },
-        password: '1'
-    }
-]
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -89,17 +54,38 @@ router.get("/clients", async (req, res) => {
     const data = await response.json();
     return res.json({
         success: true,
-        data: data.reduce((acc, cur) => {
-            acc.push(Object.entries(cur).reduce((accc, curr) => {
-                const [k, v] = curr
-                if (k !== "routes") {
-                    accc[k] = v
-                }
-                return accc
-            }, {}))
-            return acc
-        }, []),
+        data: data,
     });
+});
+
+
+router.get("/routes", async (req, res) => {
+    const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes?select=coordinates,id,created_at,client_id&order=created_at.desc`, {
+        method: "GET",
+        headers: {
+            apikey: SUPABASE_API_KEY,
+            Authorization: `Bearer ${SUPABASE_API_KEY}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+    }
+    const data = await response.json();
+    const uniqueClientIds = [];
+    const uniqueData = data.filter(item => {
+        if (!uniqueClientIds.includes(item.client_id)) {
+            uniqueClientIds.push(item.client_id);
+            return true;
+        }
+        return false;
+    });
+
+    return res.json(uniqueData);
+    // return res.json({
+    //     success: true,
+    //     data: data,
+    // });
 });
 
 router.post("/routes/add", async (req, res) => {
