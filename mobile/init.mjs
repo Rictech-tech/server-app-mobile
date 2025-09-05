@@ -58,9 +58,34 @@ router.get("/clients", async (req, res) => {
     });
 });
 
+async function routesGoogleMaps({
+    current,
+    routes
+}) {
+    console.log({ current, routes })
+    const origin = `${current.latitude},${current.longitude}`;
+    // "-11.8245954,-77.1025073"
+    const destinations = routes.reduce((acc, cur) => {
+        acc.push(`${cur.latitude},${cur.longitude}`)
+        return acc
+    }, []).join("|");
+    console.log(destinations)
 
-router.get("/routes", async (req, res) => {
-    const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes?select=coordinates,id,created_at,client_id&order=created_at.desc`, {
+    const apiKey = "AIzaSyDEq0noWzgMY4-hm1Jp2i7IGhH-saEHnv0";
+
+    const response = await fetch(
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=driving&key=${apiKey}`
+    );
+    const data = await response.json();
+    return data
+
+}
+
+
+router.post("/routes", async (req, res) => {
+    console.log(req.body)
+    const { coordinates } = req.body
+    const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes?select=coordinates,id,created_at,client_id,client:clients(*)&order=created_at.desc`, {
         method: "GET",
         headers: {
             apikey: SUPABASE_API_KEY,
@@ -73,17 +98,36 @@ router.get("/routes", async (req, res) => {
     }
     const data = await response.json();
     const uniqueClientIds = [];
-    const uniqueData = data.filter(item => {
-        if (!uniqueClientIds.includes(item.client_id)) {
-            uniqueClientIds.push(item.client_id);
-            return true;
+    const uniqueData = data.reduce((acc, item) => {
+        if (!acc.some(el => el.client_id === item.client_id)) {
+            acc.push(item);
         }
-        return false;
-    });
+        return acc;
+    }, []);
+
+    const googleMaps = await routesGoogleMaps({
+        current: coordinates,
+        routes: uniqueData.reduce((acc, cur) => {
+            acc.push(cur['coordinates'][cur.coordinates.length - 1])
+            return acc
+        }, [])
+    })
+
+    const newData = uniqueData.reduce((acc, cur, index) => {
+        acc.push({
+            ...cur,
+            google_maps: {
+                address: googleMaps.destination_addresses[index],
+                location: googleMaps.rows[0].elements[index]
+            }
+        })
+        return acc
+    }, [])
 
     return res.json({
         success: true,
-        data: uniqueData,
+        googleMaps,
+        data: newData,
     });
 });
 
