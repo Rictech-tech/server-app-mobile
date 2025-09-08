@@ -7,6 +7,7 @@
 	},
 	"dependencies": {
 		"@jimp/png": "^0.22.12",
+		"@mapbox/polyline": "^1.2.1",
 		"@puppeteer/browsers": "^2.7.1",
 		"axios": "^1.7.7",
 		"cors": "^2.8.5",
@@ -16,7 +17,8 @@
 		"http-proxy": "^1.18.1",
 		"https": "^1.0.0",
 		"https-proxy-agent": "^7.0.5",
-		"npm": "^11.4.2"
+		"install": "^0.13.0",
+		"npm": "^11.5.2"
 	},
 	"devDependencies": {
 		"@types/node": "^22.12.0",

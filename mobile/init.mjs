@@ -1,4 +1,5 @@
 import express from "express";
+import polyline from "@mapbox/polyline"; 
 
 const router = express.Router();
 const END_POINT_SUPABASE = "https://srhpcnaonhyzwvirvczi.supabase.co";
@@ -64,26 +65,62 @@ async function routesGoogleMaps({
 }) {
     console.log({ current, routes })
     const origin = `${current.latitude},${current.longitude}`;
-    // "-11.8245954,-77.1025073"
     const destinations = routes.reduce((acc, cur) => {
         acc.push(`${cur.latitude},${cur.longitude}`)
         return acc
     }, []).join("|");
-    console.log(destinations)
 
     const apiKey = "AIzaSyDEq0noWzgMY4-hm1Jp2i7IGhH-saEHnv0";
-
     const response = await fetch(
         `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&mode=driving&key=${apiKey}`
     );
     const data = await response.json();
     return data
-
 }
 
+const GOOGLE_API_KEY = 'AIzaSyCkeuTYDX-d-uOT5NknCI3lRtaQxjlVaNw'; // 🔐 guarda tu API key en env
+
+/**
+ * Obtiene y decodifica la ruta desde Google Directions API
+ * @param {Object} origin { lat, lng }
+ * @param {Array} waypoints [{ lat, lng }, ...]
+ * @param {Object} destination { lat, lng }
+ */
+export async function getRoute(origin, waypoints) {
+  try {
+    if (!waypoints || waypoints.length === 0) {
+      throw new Error("Debes proporcionar al menos un waypoint");
+    }
+
+    const originStr = `${origin.lat},${origin.lng}`;
+    const destinationStr = `${waypoints[waypoints.length - 1].lat},${waypoints[waypoints.length - 1].lng}`;
+    const waypointsStr = "optimize:true|" + waypoints
+      .slice(0, -1) // 👈 todos menos el último
+      .map(w => `${w.lat},${w.lng}`)
+      .join("|");
+
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originStr}&destination=${destinationStr}&waypoints=${waypointsStr}&key=${GOOGLE_API_KEY}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.routes || data.routes.length === 0) {
+      throw new Error("No se encontraron rutas");
+    }
+
+    const encoded = data.routes[0].overview_polyline.points;
+    const decoded = polyline.decode(encoded);
+
+    const path = decoded.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
+
+    return { success: true, path };
+  } catch (err) {
+    console.error("Error en getRoute:", err.message);
+    return { success: false, error: err.message };
+  }
+}
 
 router.post("/routes", async (req, res) => {
-    console.log(req.body)
     const { coordinates } = req.body
     const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes?select=coordinates,id,created_at,client_id,client:clients(*)&order=created_at.desc`, {
         method: "GET",
@@ -97,7 +134,6 @@ router.post("/routes", async (req, res) => {
         throw new Error(`Error HTTP: ${response.status}`);
     }
     const data = await response.json();
-    const uniqueClientIds = [];
     const uniqueData = data.reduce((acc, item) => {
         if (!acc.some(el => el.client_id === item.client_id)) {
             acc.push(item);
@@ -113,9 +149,24 @@ router.post("/routes", async (req, res) => {
         }, [])
     })
 
+    const googleMapsRoute = await getRoute(
+        {
+            lat: coordinates.latitude,
+            lng: coordinates.longitude
+        },
+        uniqueData.reduce((acc, cur) => {
+            acc.push({
+                lat: cur['coordinates'][cur.coordinates.length - 1].latitude,
+                lng: cur['coordinates'][cur.coordinates.length - 1].longitude
+            })
+            return acc
+        }, [])
+    )
+
     const newData = uniqueData.reduce((acc, cur, index) => {
         acc.push({
             ...cur,
+            google_maps_route: googleMapsRoute,
             google_maps: {
                 address: googleMaps.destination_addresses[index],
                 location: googleMaps.rows[0].elements[index]
