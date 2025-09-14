@@ -6,10 +6,11 @@ const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 
 router.get("/requests", async (req, res) => {
     try {
+        console.log(req.query)
         const { user_id } = req.query;
 
         const response = await fetch(
-            `${END_POINT_SUPABASE}/rest/v1/requests?select=*&user_id=eq.${user_id}`, 
+            `${END_POINT_SUPABASE}/rest/v1/requests?select=*,request_category:request_category_id(*)&user_id=eq.${user_id}`, 
             {
                 method: "GET",
                 headers: {
