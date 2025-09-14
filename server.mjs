@@ -1,7 +1,11 @@
 import express from 'express';
 import cors from 'cors'
 import dotenv from 'dotenv';
-import mobileRoutes from "./mobile/init.mjs";
+import requestRoutes from "./mobile/requests/index.mjs";
+import userRoutes from "./mobile/user/index.mjs";
+import clientsRoutes from "./mobile/clients/index.mjs";
+import routesRoutes from "./mobile/routes/index.mjs";
+import loginRoutes from "./mobile/login/index.mjs";
 
 dotenv.config();
 
@@ -15,9 +19,13 @@ app.get('/api/test', async (req, res) => {
         error: false
     });
 });
-app.use("/api/mobile", mobileRoutes);
+app.use("/api/requests", requestRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/login", loginRoutes);
+app.use("/api/clients", clientsRoutes);
+app.use("/api/routes", routesRoutes);
 
-const PORT = process.env?.PORT || 4003;
+const PORT = process.env?.PORT || 3007;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

@@ -1,0 +1,43 @@
+import express from "express";
+
+const router = express.Router();
+const END_POINT_SUPABASE = "https://srhpcnaonhyzwvirvczi.supabase.co";
+const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNyaHBjbmFvbmh5end2aXJ2Y3ppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Njg2Nzc4NSwiZXhwIjoyMDcyNDQzNzg1fQ.qYVh94hfn-eWPrsPlEBFkueJWwVOlzJZDxHnVZSVHNM";
+
+router.post("/", async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        console.log({email, password })
+        const response = await fetch(`${END_POINT_SUPABASE}/auth/v1/token?grant_type=password`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: `${SUPABASE_API_KEY}`,
+                Authorization: `Bearer ${SUPABASE_API_KEY}`,
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+        const data = await response.json();
+        const data_send = {
+            success: true,
+            user: {
+                id: data.user.id,
+                email: data.user.email,
+                ...data.user.user_metadata
+            }
+        }
+        console.log(data_send)
+        return res.json(data_send);
+    } catch(err) {
+        console.log(err)
+        return res.json({
+            success: false,
+            message: "Login incorrecto",
+        });
+    }
+});
+
+export default router;
