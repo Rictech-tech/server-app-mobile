@@ -30,7 +30,6 @@ async function routesGoogleMaps({
 const GOOGLE_API_KEY = 'AIzaSyCkeuTYDX-d-uOT5NknCI3lRtaQxjlVaNw'; // 🔐 guarda tu API key en env
 
 /**
- * Obtiene y decodifica la ruta desde Google Directions API
  * @param {Object} origin { lat, lng }
  * @param {Array} waypoints [{ lat, lng }, ...]
  * @param {Object} destination { lat, lng }
@@ -65,11 +64,12 @@ export async function getRoute(origin, waypoints) {
     return { success: true, path };
   } catch (err) {
     console.error("Error en getRoute:", err.message);
-    return { success: false, error: err.message };
+    return { success: true, error: err.message };
   }
 }
 
 router.post("/", async (req, res) => {
+    console.log("Init Get Routes...")
     const { coordinates } = req.body
     const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes?select=coordinates,id,created_at,client_id,client:clients(*)&order=created_at.desc`, {
         method: "GET",
@@ -85,6 +85,7 @@ router.post("/", async (req, res) => {
     const data = await response.json();
     const uniqueData = data.reduce((acc, item) => {
         if (item) {
+            console.log(item)
             if (!acc.some(el => el.client_id === item.client_id)) {
                 acc.push(item);
             }
@@ -106,23 +107,37 @@ router.post("/", async (req, res) => {
             lng: coordinates.longitude
         },
         uniqueData.reduce((acc, cur) => {
-            acc.push({
-                lat: cur['coordinates'][cur.coordinates.length - 1].latitude,
-                lng: cur['coordinates'][cur.coordinates.length - 1].longitude
-            })
+            if (cur.coordinates.length > 0) {
+                acc.push({
+                    lat: cur['coordinates'][cur.coordinates.length - 1].latitude,
+                    lng: cur['coordinates'][cur.coordinates.length - 1].longitude
+                })
+            }
             return acc
         }, [])
     )
-    console.log(JSON.stringify(googleMaps))
+    // console.log(JSON.stringify(googleMaps))
     const newData = uniqueData.reduce((acc, cur, index) => {
-        acc.push({
-            ...cur,
-            google_maps_route: googleMapsRoute,
-            google_maps: {
-                address: googleMaps.destination_addresses[index],
-                location: googleMaps.rows[0].elements[index]
-            }
-        })
+        if (cur.coordinates.length > 0) {
+            acc.push({
+                ...cur,
+                google_maps_route: googleMapsRoute,
+                google_maps: {
+                    address: googleMaps.destination_addresses[index],
+                    location: googleMaps.rows[0].elements[index]
+                }
+            })
+        } else {
+            acc.push({
+                ...cur,
+                google_maps_route: {
+                    success: true
+                },
+                google_maps: {
+                    success: true
+                }
+            })
+        }
         return acc
     }, [])
 
@@ -134,7 +149,7 @@ router.post("/", async (req, res) => {
 });
 
 router.post("/add", async (req, res) => {
-    console.log("Routes")
+    console.log("Init Add Route...")
     const { coordinates, client_id, signature, notes, photos } = req.body
 
     const response = await fetch(`${END_POINT_SUPABASE}/rest/v1/routes`, {
