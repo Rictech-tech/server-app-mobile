@@ -25,7 +25,7 @@ app.use("/api/login", loginRoutes);
 app.use("/api/clients", clientsRoutes);
 app.use("/api/routes", routesRoutes);
 
-const PORT = process.env?.PORT || 3007;
+const PORT = process.env?.PORT || 3006;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

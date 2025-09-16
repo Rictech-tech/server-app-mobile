@@ -94,7 +94,10 @@ router.post("/", async (req, res) => {
     }, []);
     // console.log(JSON.stringify(uniqueData))
     const googleMaps = await routesGoogleMaps({
-        current: coordinates,
+        current: {
+        "latitude": -11.855513864599944,
+        "longitude": -77.08568089714853
+    },
         routes: uniqueData.reduce((acc, cur) => {
             acc.push(cur['coordinates'][cur.coordinates.length - 1])
             return acc
@@ -131,10 +134,10 @@ router.post("/", async (req, res) => {
             acc.push({
                 ...cur,
                 google_maps_route: {
-                    success: true
+                    success: false
                 },
                 google_maps: {
-                    success: true
+                    success: false
                 }
             })
         }
